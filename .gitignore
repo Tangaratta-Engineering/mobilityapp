@@ -3,3 +3,4 @@ specs/*
 js/config.js
 .claude/launch.json
 .claude/settings.local.json
+api/node_modules/
