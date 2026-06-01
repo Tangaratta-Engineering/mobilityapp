@@ -1,0 +1,52 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    # Run automatically on PRs, or on-demand when someone comments "@claude review"
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '@claude review'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: --model claude-sonnet-4-6 --max-turns 8
+          prompt: |
+            You are reviewing a pull request for **Mobility with Simon** — a vanilla JavaScript
+            PWA backed by Firebase Firestore and Google Auth.
+
+            Review the diff for the following, in priority order:
+
+            1. **Correctness bugs** — logic errors, off-by-one, async/await misuse, unhandled
+               promise rejections, incorrect Firestore read/write patterns.
+
+            2. **Security issues** — XSS via innerHTML or eval, exposed secrets, insecure
+               Firebase rules assumptions, unsafe DOM manipulation, auth bypass risks.
+
+            3. **Firebase-specific patterns** — missing listener cleanup (onSnapshot leaks),
+               correct use of batch writes, proper auth state handling, scoped collection paths
+               via getPrivateCollectionPath.
+
+            4. **Simplification opportunities** — code that is more complex than necessary,
+               duplicated logic, or abstractions that don't pay for themselves.
+
+            For each issue found, post an **inline review comment** on the specific line.
+            Categorise each comment as one of: `[Bug]`, `[Security]`, `[Firebase]`, or `[Cleanup]`.
+
+            If a section of the diff looks correct, skip it — only comment where there is
+            something worth raising. End with a brief summary comment on the PR.
