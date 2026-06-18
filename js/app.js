@@ -1505,6 +1505,37 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
             }
         }
 
+        function showSaveConfirmation() {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-50 flex items-end justify-center p-4 bg-black bg-opacity-50';
+                overlay.innerHTML = `
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">Save workout?</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Are you done, or do you want to keep going?</p>
+                        <div class="flex flex-col gap-3">
+                            <button id="confirm-save-btn" class="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white text-base font-bold py-3 rounded-xl">
+                                Save Workout
+                            </button>
+                            <button id="confirm-resume-btn" class="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-base font-semibold py-3 rounded-xl">
+                                Resume Workout
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                overlay.querySelector('#confirm-save-btn').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(true);
+                });
+                overlay.querySelector('#confirm-resume-btn').addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    resolve(false);
+                });
+            });
+        }
+
         async function handleWorkoutSubmission(event) {
             console.log("Log workout submission started");
 
@@ -1596,6 +1627,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 
             if (logsAttempted === 0) {
                 showMessage("No sets were logged. Please enter the reps for at least one set.", 'error');
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const confirmed = await showSaveConfirmation();
+            if (!confirmed) {
                 if (submitBtn) submitBtn.disabled = false;
                 return;
             }
